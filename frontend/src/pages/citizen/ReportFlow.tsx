@@ -167,9 +167,7 @@ export default function ReportFlow() {
             setReportId(id)
       
       // Trigger backend AI processing (Simulation of webhook)
-      apiService.post('/reports/process', { reportId: id }, { timeoutMs: 120000 }).catch(err => {
-        console.error('AI processing trigger failed:', err);
-      });
+      apiService.post('/reports/process', { reportId: id }, { timeoutMs: 300000 }).catch(err => { console.error('AI processing trigger failed:', err); setError('AI Timeout: ' + err.message); setStep(1); });
     } catch (err: any) {
       setError(err.message || 'Failed to submit report')
       setStep(1)
@@ -402,6 +400,7 @@ export default function ReportFlow() {
     </div>
   )
 }
+
 
 
 
