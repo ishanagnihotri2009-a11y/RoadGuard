@@ -21,7 +21,8 @@ logs/
 /.opencode-skills/
 
 # Environment variables
-.env
+# .env
 .env.*
+
 
 
