@@ -17,7 +17,8 @@ RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
 COPY . .
 
 # Hugging Face Spaces exposes port 7860
-EXPOSE 7860
+EXPOSE 10000
 
 # Command to run the Flask app via Gunicorn
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:7860", "app:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:10000", "app:app"]
+
