@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAdmin() {
+      // Using custom claims for admin authorization
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      // CITIZEN: read own profile, update permitted fields
+      // ADMIN: user management
+      allow read: if request.auth != null;
+      
+      // Prevent citizens from changing role, points, etc.
+      allow update: if isAdmin() || (isOwner(userId) && 
+        !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['role', 'points', 'tier', 'verifiedReports', 'totalReports', 'rank']));
+        
+      allow create: if isOwner(userId) && request.resource.data.role == 'citizen' && request.resource.data.points == 0;
+      allow delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      // CITIZEN: read own reports, read eligible public map data
+      // ADMIN: report review and status changes
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin() || resource.data.status == 'verified');
+      
+      // Citizens can create reports
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Modifying another user's report is prevented (only admins can update)
+      allow update, delete: if isAdmin();
+    }
+
+    match /rewards/{rewardId} {
+      // CITIZEN: read own rewards
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
+      // Backend/admin-controlled logic for sensitive operations
+      allow write: if false; 
+    }
+
+    match /achievements/{achievementId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /user_achievements/{uaId} {
+      // CITIZEN: read own achievements
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
+      allow write: if false;
+    }
+    
+    match /notifications/{notifId} {
+      allow read: if request.auth != null && (isOwner(resource.data.userId) || isAdmin());
+      allow update: if request.auth != null && isOwner(resource.data.userId); // e.g., mark as read
+      allow create, delete: if false;
+    }
+
+    match /suspicious_reports/{suspiciousId} {
+      // ADMIN: suspicious report review
+      allow read, write: if isAdmin();
+    }
+
+    match /admin_actions/{actionId} {
+      // ADMIN: administrative data
+      allow read, write: if isAdmin();
+    }
+  }
+}
+

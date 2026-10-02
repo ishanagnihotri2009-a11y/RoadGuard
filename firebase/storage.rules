@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /reports/{userId}/{imageId} {
+      allow write: if isOwner(userId);
+      allow read: if true;
+    }
+    
+    match /annotated/{imageId} {
+      // Backend handles writing annotated images
+      allow write: if false; 
+      allow read: if true;
+    }
+  }
+}
