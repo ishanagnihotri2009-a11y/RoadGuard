@@ -20,5 +20,6 @@ COPY . .
 EXPOSE 10000
 
 # Command to run the Flask app via Gunicorn
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:10000", "app:app"]
+CMD ["gunicorn", "-w", "1", "--timeout", "300", "-b", "0.0.0.0:10000", "app:app"]
+
 
