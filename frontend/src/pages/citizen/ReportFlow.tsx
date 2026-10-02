@@ -167,7 +167,7 @@ export default function ReportFlow() {
             setReportId(id)
       
       // Trigger backend AI processing (Simulation of webhook)
-      apiService.post('/reports/process', { reportId: id }).catch(err => {
+      apiService.post('/reports/process', { reportId: id }, { timeoutMs: 120000 }).catch(err => {
         console.error('AI processing trigger failed:', err);
       });
     } catch (err: any) {
@@ -402,6 +402,7 @@ export default function ReportFlow() {
     </div>
   )
 }
+
 
 
 
