@@ -25,6 +25,9 @@ def get_detector():
 
 @reports_bp.route('/analyze', methods=['POST'])
 @require_auth
+def analyze():
+    return jsonify({'status': 'analyze_queued'}), 200
+
 @reports_bp.route('/leaderboard', methods=['GET'])
 def get_leaderboard():
     try:
@@ -245,6 +248,7 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({'url': f"http://localhost:5000/uploads/{filename}"}), 200
+
 
 
 
