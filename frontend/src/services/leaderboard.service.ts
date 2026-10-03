@@ -1,5 +1,4 @@
-﻿import { collection, query, orderBy, limit, getDocs, onSnapshot, DocumentData, QuerySnapshot } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+﻿import { apiService } from './api.service'
 
 export interface LeaderboardUser {
   id: string
@@ -13,23 +12,27 @@ export interface LeaderboardUser {
 
 export const leaderboardService = {
   subscribeToLeaderboard: (callback: (users: LeaderboardUser[]) => void) => {
-    const q = query(
-      collection(db, 'users'),
-      orderBy('points', 'desc'),
-      limit(100) // Top 100
-    )
-    
-    return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-      const users = snapshot.docs.map((doc, index) => ({
-        id: doc.id,
-        name: doc.data().name || 'Anonymous',
-        points: doc.data().points || 0,
-        tier: doc.data().tier || 'Rookie',
-        totalReports: doc.data().totalReports || 0,
-        verifiedReports: doc.data().verifiedReports || 0,
-        rank: index + 1
-      } as LeaderboardUser))
-      callback(users)
-    })
+    // Instead of Firestore onSnapshot (which fails security rules for citizens),
+    // we poll the secure backend API endpoint every 30 seconds.
+    let isSubscribed = true;
+
+    const fetchLeaderboard = async () => {
+      try {
+        const users = await apiService.get<LeaderboardUser[]>('/leaderboard');
+        if (isSubscribed) {
+          callback(users);
+        }
+      } catch (err) {
+        console.error("Failed to fetch leaderboard:", err);
+      }
+    };
+
+    fetchLeaderboard();
+    const interval = setInterval(fetchLeaderboard, 30000);
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
   }
 }
