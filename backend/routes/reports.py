@@ -61,7 +61,7 @@ def process_report():
         report_ref.update({'status': 'pending', 'aiError': 'No image URL found'})
         return jsonify({'error': 'No image URL'}), 400
         
-    temp_img_path = f"temp_in_{uuid.uuid4().hex}.jpg"
+    temp_img_path = f"/tmp/temp_in_{uuid.uuid4().hex}.jpg"
     try:
         urllib.request.urlretrieve(image_url, temp_img_path)
     except Exception as e:
@@ -71,7 +71,7 @@ def process_report():
     try:
         det = get_detector()
         start_time = datetime.now()
-        ai_result = det.analyze(temp_img_path)
+        ai_result = det.analyze(temp_img_path, output_dir="/tmp")
         inference_ms = int((datetime.now() - start_time).total_seconds() * 1000)
     except Exception as e:
         if os.path.exists(temp_img_path): os.remove(temp_img_path)
@@ -216,6 +216,7 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({'url': f"http://localhost:5000/uploads/{filename}"}), 200
+
 
 
 
