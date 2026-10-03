@@ -87,23 +87,29 @@ def process_report():
     imgbb_err = ""
     if ai_result.get('annotatedImagePath') and os.path.exists(ai_result['annotatedImagePath']):
         try:
-            import requests
-            imgbb_key = os.environ.get('IMGBB_API_KEY')
-            if imgbb_key:
-                with open(ai_result['annotatedImagePath'], 'rb') as img_file:
-                    res = requests.post(
-                        f"https://api.imgbb.com/1/upload?key={imgbb_key}",
-                        files={"image": img_file},
-                        timeout=30
-                    )
-                if res.status_code == 200:
-                    annotated_url = res.json()['data']['url']
+            import cv2
+            import base64
+            img = cv2.imread(ai_result['annotatedImagePath'])
+            
+            # Resize to max 1280px width to save space
+            h, w = img.shape[:2]
+            if w > 1280:
+                ratio = 1280 / w
+                img = cv2.resize(img, (1280, int(h * ratio)))
+                
+            # Compress to JPEG
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 65]
+            success, encimg = cv2.imencode('.jpg', img, encode_param)
+            
+            if success:
+                b64 = base64.b64encode(encimg).decode('utf-8')
+                data_uri = f"data:image/jpeg;base64,{b64}"
+                if len(data_uri) < 900000: # Ensure < 900KB
+                    annotated_url = data_uri
                 else:
-                    imgbb_err = f"Status {res.status_code}: {res.text}"
-            else:
-                imgbb_err = "Warning: IMGBB_API_KEY not set."
+                    imgbb_err = f"Image too large for Firestore: {len(data_uri)} bytes"
         except Exception as e:
-            imgbb_err = f"Exception: {str(e)}"
+            imgbb_err = f"Base64 Exception: {str(e)}"
         
         try:
             os.remove(ai_result['annotatedImagePath'])
@@ -216,6 +222,7 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({'url': f"http://localhost:5000/uploads/{filename}"}), 200
+
 
 
 
