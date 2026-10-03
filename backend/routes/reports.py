@@ -25,6 +25,29 @@ def get_detector():
 
 @reports_bp.route('/analyze', methods=['POST'])
 @require_auth
+@reports_bp.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    try:
+        db = firestore.client()
+        # Top 100 users ordered by points
+        users_ref = db.collection('users').order_by('points', direction=firestore.Query.DESCENDING).limit(100).stream()
+        leaderboard = []
+        for i, u in enumerate(users_ref):
+            d = u.to_dict()
+            leaderboard.append({
+                'id': u.id,
+                'name': d.get('name', 'Anonymous'),
+                'points': d.get('points', 0),
+                'tier': d.get('tier', 'Rookie'),
+                'totalReports': d.get('totalReports', 0),
+                'verifiedReports': d.get('verifiedReports', 0),
+                'rank': i + 1
+            })
+        return jsonify(leaderboard), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 def analyze():
     return jsonify({'status': 'analyze_queued'}), 200
 
@@ -222,6 +245,7 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({'url': f"http://localhost:5000/uploads/{filename}"}), 200
+
 
 
 
