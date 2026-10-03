@@ -84,6 +84,7 @@ def process_report():
         return jsonify({'error': 'AI processing error', 'details': ai_result['error']}), 500
         
     annotated_url = ""
+    imgbb_err = ""
     if ai_result.get('annotatedImagePath') and os.path.exists(ai_result['annotatedImagePath']):
         try:
             import requests
@@ -92,14 +93,18 @@ def process_report():
                 with open(ai_result['annotatedImagePath'], 'rb') as img_file:
                     res = requests.post(
                         f"https://api.imgbb.com/1/upload?key={imgbb_key}",
-                        files={"image": img_file}
+                        files={"image": img_file},
+                        timeout=30
                     )
                 if res.status_code == 200:
                     annotated_url = res.json()['data']['url']
+                else:
+                    imgbb_err = f"Status {res.status_code}: {res.text}"
             else:
-                print("Warning: IMGBB_API_KEY not set.")
+                imgbb_err = "Warning: IMGBB_API_KEY not set."
         except Exception as e:
-            print(f"Warning: Failed to upload annotated image to ImgBB: {e}")
+            imgbb_err = f"Exception: {str(e)}"
+        
         try:
             os.remove(ai_result['annotatedImagePath'])
         except: pass
@@ -137,7 +142,7 @@ def process_report():
         'confidence': ai_result['confidence'],
         'severity': ai_result['severity'],
         'detections': ai_result['detections'],
-        'annotatedImageUrl': annotated_url,
+        'annotatedImageUrl': annotated_url, 'imgbbError': imgbb_err,
         'processedAt': datetime.now().isoformat(),
         'aiData': {
             'model': 'YOLOv8-Pothole (or yolov8n fallback)',
@@ -211,5 +216,6 @@ def upload_image():
     file.save(filepath)
     
     return jsonify({'url': f"http://localhost:5000/uploads/{filename}"}), 200
+
 
 
