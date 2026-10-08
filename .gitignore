@@ -1,7 +1,7 @@
 ﻿
 # Environment variables
-# .env
-# .env.*
+.env
+.env.*
 
 # Python
 __pycache__/
@@ -9,4 +9,8 @@ __pycache__/
 *.class
 venv/
 
+
+
+# Firebase Admin Credentials
+serviceAccountKey.json
 
